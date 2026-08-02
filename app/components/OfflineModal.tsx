@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { formatNumber } from "../utils";
 
 interface OfflineModalProps {
   isOpen: boolean;
@@ -57,7 +58,7 @@ export default function OfflineModal({
             <p className="text-green-100/90 text-center text-sm mb-6 leading-relaxed">
               Пока вас не было ({timeString}), ваша бригада трудилась и заработала:
               <span className="text-yellow-300 font-black text-2xl block mt-1 drop-shadow-[0_0_10px_rgba(234,179,8,0.6)]">
-                +{offlineEarned.toLocaleString()} монет
+                +{formatNumber(offlineEarned)} монет
               </span>
             </p>
             
@@ -66,7 +67,7 @@ export default function OfflineModal({
               onClick={onDoubleReward}
               className="w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-black font-black text-lg py-4 rounded-2xl mb-3 shadow-[0_6px_0_#9a3412] active:translate-y-[6px] transition-all uppercase tracking-wider flex items-center justify-center gap-2"
             >
-              <span>Удвоить (+{doubledReward.toLocaleString()})</span>
+              <span>Удвоить (+{formatNumber(doubledReward)})</span>
             </button>
 
             {/* ВТОРОСТЕПЕННАЯ КНОПКА: ЗАБРАТЬ ОБЫЧНУЮ НАГРАДУ */}

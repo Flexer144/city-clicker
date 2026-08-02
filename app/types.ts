@@ -21,6 +21,12 @@ export interface SaveData {
   soundEnabled?: boolean;
   musicEnabled?: boolean;
   vibrationEnabled?: boolean;
+  diamonds?: number;
+  lastDiamondChestTimestamp?: number; 
+  lastShopAdTimestamp?: number;   
+  diamondUpgrades?: number;   
+  goldRushEndTime?: number; 
+  autoForemanEndTime?: number; 
 }
 
 export interface LeaderboardEntry {
@@ -31,4 +37,5 @@ export interface LeaderboardEntry {
   coins: number;
   totalEarned: number;
   isCurrentPlayer?: boolean;
+  diamonds?: number;
 }

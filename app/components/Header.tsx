@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { Settings } from "lucide-react"; // Импортируем шестеренку
+import { Settings } from "lucide-react"; 
+import { formatNumber } from "../utils";
 
 interface HeaderProps {
   totalEarned: number;
@@ -8,9 +9,11 @@ interface HeaderProps {
   coins: number;
   isChestVisible: boolean;
   isModalOpen: boolean;
+  diamonds: number;
+  currentEpoch: number; 
   mayorImage: string;
   setIsModalOpen: (val: boolean) => void;
-  openSettings: () => void; // <-- ФУНКЦИЯ ОТКРЫТИЯ НАСТРОЕК
+  openSettings: () => void;
 }
 
 export default function Header({
@@ -18,6 +21,8 @@ export default function Header({
   nextThreshold,
   progressPercent,
   coins,
+  diamonds,
+  currentEpoch,
   isChestVisible,
   isModalOpen,
   setIsModalOpen,
@@ -32,18 +37,33 @@ export default function Header({
           style={{ width: `${progressPercent}%` }}
         />
         <span className="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-black text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] tracking-wider">
-          {totalEarned.toLocaleString()} / {nextThreshold.toLocaleString()}
+          {formatNumber(totalEarned)} / {formatNumber(nextThreshold)}
         </span>
       </div>
 
       <div className="flex justify-between items-center relative z-10">
-        <div className="flex gap-3 items-center bg-gradient-to-r from-black/85 via-black/75 to-black/85 pr-4 pl-2 py-1 rounded-full backdrop-blur-md border-2 border-yellow-500/70 shadow-[0_4px_15px_rgba(0,0,0,0.6)]">
-          <div className="w-7 h-7 sm:w-7 sm:h-7 relative -my-2 ml-1">
-            <Image src="/money1.png" alt="Монета" fill className="object-contain" priority />
+        <div className="flex gap-2 flex-wrap max-w-[90%]">
+          {/* МОНЕТЫ */}
+          <div className="flex gap-2 items-center bg-gradient-to-r from-black/85 via-black/75 to-black/85 pr-4 pl-2 py-1 rounded-full backdrop-blur-md border-2 border-yellow-500/70 shadow-[0_4px_15px_rgba(0,0,0,0.6)]">
+            <div className="w-6 h-6 sm:w-7 sm:h-7 relative -my-1 ml-0.5">
+              <Image src="/money1.png" alt="Монета" fill className="object-contain" priority />
+            </div>
+            <span className="text-lg pb-0.5 sm:text-xl font-black text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] tracking-wide">
+              {formatNumber(coins)}
+            </span>
           </div>
-          <span className="text-xl pb-0.5 sm:text-xl font-black text-yellow-300 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] tracking-wide">
-            {coins.toLocaleString()}
-          </span>
+
+          {/* АЛМАЗЫ (Скрыты в начале игры) */}
+          {(currentEpoch >= 2 || diamonds > 0) && (
+            <div className="flex gap-1 items-center bg-gradient-to-r from-blue-950/90 via-blue-900/80 to-blue-950/90 pr-3 pl-1.5 py-1 rounded-full backdrop-blur-md border-2 border-blue-500/80">
+              <div className="w-9 h-6 relative -my-1 ml-0.5 drop-shadow-[0_0_4px_rgba(56,189,248,0.8)]">
+                <Image src="/diamond1.png" alt="Алмаз" fill className="object-contain" priority />
+              </div>
+              <span className="text-xl -pb-0.5 font-black text-cyan-300 drop-shadow-[0_2px_4px_rgba(0,0,0,1)] tracking-wide">
+                {formatNumber(diamonds)}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* АВАТАР МЭРА С КНОПКОЙ НАСТРОЕК */}

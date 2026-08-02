@@ -8,6 +8,7 @@ interface GameFieldProps {
   isLocalCloudActive: boolean;
   centerObjectSrc: string;
   handleMainClick: (e: React.PointerEvent<HTMLDivElement>) => void;
+  bubbleType: "coins" | "diamonds";
 }
 
 export default function GameField({
@@ -17,6 +18,7 @@ export default function GameField({
   isLocalCloudActive,
   centerObjectSrc,
   handleMainClick,
+  bubbleType
 }: GameFieldProps) {
   return (
     <section className="relative z-10 flex-1 flex items-center justify-center pb-4">
@@ -34,9 +36,21 @@ export default function GameField({
             <motion.div
               animate={{ y: [-20, 20, -20] }}
               transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-              className="w-full h-full drop-shadow-[0_0_20px_rgba(59,130,246,0.8)] active:scale-90"
+              // Меняем цвет свечения в зависимости от типа
+              className={`w-full h-full active:scale-90 ${
+                bubbleType === "diamonds" 
+                  ? "drop-shadow-[0_0_25px_rgba(34,211,238,0.9)]" 
+                  : "drop-shadow-[0_0_20px_rgba(59,130,246,0.8)]"
+              }`}
             >
-              <Image src="/bubble.png" alt="Денежный пузырь" fill className="object-contain animate-pulse" />
+              {/* Если у тебя есть картинка blue-bubble.png, он покажет её. 
+                  Если нет, можно временно юзать CSS-фильтр hue-rotate-180, чтобы сделать обычный пузырь синим */}
+              <Image 
+                src={bubbleType === "diamonds" ? "/blue-bubble.png" : "/bubble.png"} 
+                alt="Денежный пузырь" 
+                fill 
+                className={`object-contain animate-pulse`} 
+              />
             </motion.div>
           </motion.div>
         )}

@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { X, Trophy, Medal } from "lucide-react";
 import { LeaderboardEntry } from "../types";
+import { formatNumber } from "../utils";
 
 interface RatingModalProps {
   isOpen: boolean;
@@ -90,16 +91,27 @@ export default function RatingModal({ isOpen, onClose, leaderboard, epochsConfig
                       </p>
                     </div>
 
-                    {/* Очки / Монеты */}
                     <div className="text-right flex flex-col items-end pl-2 shrink-0">
+                      {/* Очки / Монеты */}
                       <div className="flex items-center gap-1.5">
                         <span className="font-black text-sm text-yellow-400 tracking-wide">
-                          {player.totalEarned.toLocaleString()}
+                          {formatNumber(player.totalEarned)}
                         </span>
                         <Image src="/money1.png" alt="coin" width={14} height={14} className="object-contain" />
                       </div>
+                      
+                      {/* Алмазы (показываем если больше 0) */}
+                      {(player.diamonds || 0) > 0 && (
+                        <div className="flex items-center gap-1 mt-0.5 opacity-90">
+                          <span className="font-bold text-[14px] text-cyan-300">
+                            {formatNumber(player.diamonds || 0)}
+                          </span>
+                          <Image src="/diamond1.png" alt="diamond" width={14} height={14} className="object-contain drop-shadow-[0_0_5px_rgba(56,189,248,0.8)]" />
+                        </div>
+                      )}
+
                       {player.isCurrentPlayer && (
-                        <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest mt-0.5">
+                        <span className="text-[9px] font-black text-yellow-500 uppercase tracking-widest mt-1">
                           Это вы
                         </span>
                       )}
