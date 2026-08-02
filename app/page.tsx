@@ -131,7 +131,7 @@ export default function Game() {
         setLastDiamondChestTimestamp(savedChestTime);
         setLastShopAdTimestamp(data.lastShopAdTimestamp ?? 0);
         // Проверяем: если прошло 24 часа (86 400 000 мс) с прошлого сундука - показываем новый!
-        if (Date.now() - savedChestTime > 100) {
+        if (Date.now() - savedChestTime > 86400000) {
           setIsDiamondChestVisible(true);
         }
 
