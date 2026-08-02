@@ -3,6 +3,7 @@ import Image from "next/image";
 import { X, Trophy, Medal } from "lucide-react";
 import { LeaderboardEntry } from "../types";
 import { formatNumber } from "../utils";
+import { audioManager } from "../audio";
 
 interface RatingModalProps {
   isOpen: boolean;
@@ -22,7 +23,7 @@ export default function RatingModal({ isOpen, onClose, leaderboard, epochsConfig
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-40 bg-black/70 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={() => { audioManager.play("ui"); onClose(); }}
           />
           
           {/* Само модальное окно */}
@@ -41,7 +42,7 @@ export default function RatingModal({ isOpen, onClose, leaderboard, epochsConfig
                 <Trophy className="text-yellow-400 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)]" size={28} />
                 <h2 className="text-2xl font-black text-white uppercase tracking-wide">Рейтинг</h2>
               </div>
-              <button onClick={onClose} className="bg-white/10 p-2 rounded-full active:scale-90 transition-transform">
+              <button onClick={() => { audioManager.play("ui"); onClose(); }} className="bg-white/10 p-2 rounded-full active:scale-90 transition-transform">
                 <X className="text-white" size={24} />
               </button>
             </div>

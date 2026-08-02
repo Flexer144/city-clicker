@@ -43,8 +43,6 @@ export default function GameField({
                   : "drop-shadow-[0_0_20px_rgba(59,130,246,0.8)]"
               }`}
             >
-              {/* Если у тебя есть картинка blue-bubble.png, он покажет её. 
-                  Если нет, можно временно юзать CSS-фильтр hue-rotate-180, чтобы сделать обычный пузырь синим */}
               <Image 
                 src={bubbleType === "diamonds" ? "/blue-bubble.png" : "/bubble.png"} 
                 alt="Денежный пузырь" 

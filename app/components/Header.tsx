@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Settings } from "lucide-react"; 
 import { formatNumber } from "../utils";
+import { audioManager } from "../audio";
 
 interface HeaderProps {
   totalEarned: number;
@@ -68,7 +69,7 @@ export default function Header({
 
         {/* АВАТАР МЭРА С КНОПКОЙ НАСТРОЕК */}
         <div 
-          onClick={openSettings}
+          onClick={() => { audioManager.play("ui"); openSettings(); }}
           className="relative w-20 h-20 rounded-full border-[3px] border-yellow-400 bg-gradient-to-b from-yellow-600 to-amber-900 shadow-[0_0_20px_rgba(234,179,8,0.6)] flex-shrink-0 cursor-pointer active:scale-95 transition-transform"
         >
           <Image src={mayorImage} alt="Мэр" fill className="object-cover rounded-full" sizes="80px" priority />
@@ -82,7 +83,7 @@ export default function Header({
         {isChestVisible && !isModalOpen && (
           <div
             className="absolute top-16 -left-4 w-34 h-34 sm:w-28 sm:h-28 animate-pulse cursor-pointer hover:scale-110 active:scale-95 transition-all drop-shadow-[0_12px_25px_rgba(234,179,8,0.8)] z-50"
-            onClick={() => setIsModalOpen(true)}
+            onClick={() => { audioManager.play("ui"); setIsModalOpen(true); }}
           >
             <Image src="/chest.png" alt="Сундук" fill className="object-contain" sizes="112px" />
           </div>

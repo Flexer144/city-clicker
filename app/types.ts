@@ -26,7 +26,9 @@ export interface SaveData {
   lastShopAdTimestamp?: number;   
   diamondUpgrades?: number;   
   goldRushEndTime?: number; 
-  autoForemanEndTime?: number; 
+  autoForemanEndTime?: number;
+  clickLevel?: number;
+  passiveLevel?: number;
 }
 
 export interface LeaderboardEntry {

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatNumber } from "./utils";
+import { audioManager } from "./audio";
 
 // ИМПОРТЫ КОМПОНЕНТОВ
 import { ClickParticle, LeaderboardEntry, SaveData } from "./types";
@@ -15,7 +16,7 @@ import OfflineModal from "./components/OfflineModal";
 import RatingModal from "./components/RatingModal";
 import SettingsModal from "./components/SettingsModal";
 
-const SAVE_KEY = "construction_century_save_v1";
+const SAVE_KEY = "construction_century_save_v3";
 
 
 type EpochConfig = {
@@ -38,7 +39,7 @@ const EPOCHS: Record<number, EpochConfig> = {
     name: "Деревня",
     thresholds: [500000, 3000000, 15000000],
     bg: "/background.png",
-    objects: ["/reed-house.png", "/stone-house.png", "/reed-house1.png"],
+    objects: ["/reed-house1.png", "/stone-house.png", "/reed-house1.png"],
     mayor: "/mayor2.png",
   },
 };
@@ -61,6 +62,8 @@ export default function Game() {
 
   const [clickPower, setClickPower] = useState(1);
   const [passiveIncome, setPassiveIncome] = useState(0);
+  const [clickLevel, setClickLevel] = useState(1);
+  const [passiveLevel, setPassiveLevel] = useState(0)
   const [critChance, setCritChance] = useState(0);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -102,13 +105,23 @@ export default function Game() {
   const [bubbleType, setBubbleType] = useState<"coins" | "diamonds">("coins");
   const [isBubbleModalOpen, setIsBubbleModalOpen] = useState(false);
 
-  const clickUpgradeCost = Math.floor(50 * Math.pow(1.16, clickPower - 1));
-  const passiveLevel = passiveIncome / 2;
-  const passiveUpgradeCost = Math.floor(100 * Math.pow(1.3, passiveLevel));
+  const clickUpgradeCost = Math.floor(25 * Math.pow(1.15, clickLevel - 1));
+  const clickPowerToAdd = Math.floor(1 + Math.pow(1.045, clickLevel - 1));
+
+  const passiveUpgradeCost = Math.floor(50 * Math.pow(1.16, passiveLevel));
+  const passiveIncomeToAdd = Math.floor(2 + Math.pow(1.05, passiveLevel));
 
   // ==========================================
-  // СИСТЕМА СОХРАНЕНИЙ И ОФФЛАЙН ДОХОДА
+  // СИСТЕМА СОХРАНЕНИЙ И ОФФЛАЙН ДОХОДА, ЗВУКИ
   // ==========================================
+
+  // --- УПРАВЛЕНИЕ АУДИО ---
+  useEffect(() => {
+    if (isLoaded) {
+      audioManager.init();
+      audioManager.updateSettings(musicEnabled, soundEnabled);
+    }
+  }, [isLoaded, musicEnabled, soundEnabled]);
 
   // 1. Загрузка данных при старте
   useEffect(() => {
@@ -122,6 +135,8 @@ export default function Game() {
         setCurrentEpoch(data.currentEpoch ?? 1);
         setClickPower(data.clickPower ?? 1);
         setPassiveIncome(data.passiveIncome ?? 0);
+        setClickLevel(data.clickLevel ?? data.clickPower ?? 1);
+        setPassiveLevel(data.passiveLevel ?? (data.passiveIncome ? data.passiveIncome / 2 : 0));
         setCritChance(data.critChance ?? 0);
         setDiamonds(data.diamonds ?? 0);
         setDiamondUpgrades(data.diamondUpgrades ?? 0);
@@ -187,8 +202,10 @@ export default function Game() {
         goldRushEndTime,
         autoForemanEndTime,
         lastDiamondChestTimestamp,
-        lastShopAdTimestamp,   
-   
+        lastShopAdTimestamp, 
+        clickLevel,
+        passiveLevel,
+
         lastOnlineTimestamp: Date.now(),
       };
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
@@ -205,7 +222,7 @@ export default function Game() {
       window.removeEventListener("beforeunload", saveProgress);
       window.removeEventListener("visibilitychange", saveProgress);
     };
-  }, [isLoaded, coins, totalEarned, stage, currentEpoch, clickPower, passiveIncome, critChance, username, soundEnabled, musicEnabled, vibrationEnabled, diamonds, lastDiamondChestTimestamp, lastShopAdTimestamp, diamondUpgrades, goldRushEndTime, autoForemanEndTime]);
+  }, [isLoaded, coins, totalEarned, stage, currentEpoch, clickPower, passiveIncome, critChance, username, soundEnabled, musicEnabled, vibrationEnabled, diamonds, lastDiamondChestTimestamp, lastShopAdTimestamp, diamondUpgrades, goldRushEndTime, autoForemanEndTime, clickLevel, passiveLevel]);
 
   // ==========================================
   // ОСТАЛЬНАЯ ЛОГИКА
@@ -249,11 +266,11 @@ export default function Game() {
 
   const handleWatchDiamondChestAd = () => {
     // В будущем здесь будет вызов рекламы: ysdk.adv.showRewardedVideo(...)
-    
-    setDiamonds((prev) => prev + 15); // Выдаем 15 алмазов
-    setLastDiamondChestTimestamp(Date.now()); // Обновляем таймер
-    setIsDiamondChestVisible(false); // Прячем сундук на карте
-    setIsDiamondChestModalOpen(false); // Закрываем модалку
+    audioManager.play("reward");
+    setDiamonds((prev) => prev + 15); 
+    setLastDiamondChestTimestamp(Date.now()); 
+    setIsDiamondChestVisible(false); 
+    setIsDiamondChestModalOpen(false); 
   };
 
   // Убираем облака после загрузки
@@ -287,6 +304,7 @@ export default function Game() {
   const triggerObjectEvolution = (nextStage: number) => {
     setIsTransitioning(true);
     setIsLocalCloudActive(true);
+    audioManager.play("build"); // <-- ЗВУК СТРОЙКИ (воздух + молоток)
     setDiamonds((prev) => prev + 1);
     setTimeout(() => setStage(nextStage), 700); 
     setTimeout(() => {
@@ -299,6 +317,7 @@ export default function Game() {
     setIsTransitioning(true);
     setIsFullCloudActive(true); 
     setDiamonds((prev) => prev + 10);
+    audioManager.play("whoosh"); // <-- ЗВУК ВОЗДУХА
     
     setTimeout(() => {
       setCurrentEpoch(nextEpoch);
@@ -334,11 +353,11 @@ export default function Game() {
     return () => clearInterval(interval);
   }, [passiveIncome, isLoaded, activeMultiplier]);
 
-  // ПОКУПКИ
   const buyClickUpgrade = () => {
     if (coins >= clickUpgradeCost) {
       setCoins((prev) => prev - clickUpgradeCost);
-      setClickPower((prev) => prev + 1);
+      setClickPower((prev) => prev + clickPowerToAdd);
+      setClickLevel((prev) => prev + 1);
     }
   };
 
@@ -359,7 +378,7 @@ export default function Game() {
   const buyAutoForeman = () => {
     if (diamonds >= AUTO_FOREMAN_COST && !isAutoForemanActive) {
       setDiamonds((prev) => prev - AUTO_FOREMAN_COST);
-      setAutoForemanEndTime(Date.now() + 3 * 60 * 1000); // 3 минуты
+      setAutoForemanEndTime(Date.now() + 2 * 60 * 1000); // 2 минуты
     }
   };
 
@@ -372,7 +391,8 @@ export default function Game() {
   const buyPassiveUpgrade = () => {
     if (coins >= passiveUpgradeCost) {
       setCoins((prev) => prev - passiveUpgradeCost);
-      setPassiveIncome((prev) => prev + 2);
+      setPassiveIncome((prev) => prev + passiveIncomeToAdd);
+      setPassiveLevel((prev) => prev + 1);
     }
   };
 
@@ -388,11 +408,13 @@ export default function Game() {
 
   const handleUpgradeViaAd = () => {
     if (shopTab === "click") {
-      setClickPower((prev) => prev + 2);
+      setClickPower((prev) => prev + clickPowerToAdd);
+      setClickLevel((prev) => prev + 1);
       setIsClickAdCooldown(true);
       setTimeout(() => setIsClickAdCooldown(false), 60000);
     } else {
-      setPassiveIncome((prev) => prev + 2);
+      setPassiveIncome((prev) => prev + passiveIncomeToAdd);
+      setPassiveLevel((prev) => prev + 1);
       setIsPassiveAdCooldown(true);
       setTimeout(() => setIsPassiveAdCooldown(false), 60000);
     }
@@ -404,6 +426,7 @@ export default function Game() {
     const isCrit = Math.random() * 100 < critChance;
     const baseEarned = isCrit ? clickPower * 5 : clickPower;
     const earned = baseEarned * activeMultiplier;
+    audioManager.play("click"); // <-- ЗВУК КЛИКА
 
     setCoins((prev) => prev + earned);
     setTotalEarned((prev) => prev + earned);
@@ -422,6 +445,7 @@ export default function Game() {
 
   const handleWatchAd = () => {
     const reward = calculateAdReward();
+    audioManager.play("reward"); // <-- ЗВУК ЗВОНА МОНЕТ
     setCoins((prev) => prev + reward);
     setTotalEarned((prev) => prev + reward);
     setIsModalOpen(false);
@@ -440,6 +464,7 @@ export default function Game() {
 
   const handleBubbleClick = () => {
     setIsBubbleVisible(false);
+    audioManager.play("pop");
     
     if (bubbleType === "diamonds") {
       const reward = Math.floor(Math.random() * 3) + 1;
@@ -451,6 +476,7 @@ export default function Game() {
 
   const handleWatchBubbleAd = () => {
     setCoins((prev) => prev + bubbleReward);
+    audioManager.play("reward"); // <-- ЗВУК ЗВОНА МОНЕТ
     setTotalEarned((prev) => prev + bubbleReward);
     setIsBubbleModalOpen(false);
   };
@@ -565,6 +591,8 @@ export default function Game() {
           currentTime={currentTime}
           buyGoldRush={buyGoldRush}
           buyAutoForeman={buyAutoForeman}
+          clickPowerToAdd={clickPowerToAdd}
+          passiveIncomeToAdd={passiveIncomeToAdd} 
         />
 
         <RatingModal 
@@ -607,8 +635,8 @@ export default function Game() {
                 </motion.div>
                 <h2 className="text-2xl font-black text-yellow-400 mb-2 uppercase tracking-wide text-center drop-shadow-md">Секретная поставка!</h2>
                 <p className="text-yellow-100/90 text-center text-sm mb-6 leading-relaxed">Инвесторы привезли ресурсы. Посмотри видео и забери бонус: <span className="text-yellow-300 font-black text-xl block mt-2 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]">+{formatNumber(adReward)} монет</span></p>
-                <button onClick={handleWatchAd} className="w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-black font-black text-lg py-4 rounded-2xl mb-3 shadow-[0_6px_0_#9a3412] active:translate-y-[6px] transition-all uppercase tracking-wider">Посмотреть видео</button>
-                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-200 text-xs font-semibold uppercase tracking-widest py-2">Отказаться от награды</button>
+                <button onClick={() => { audioManager.play("ui"); handleWatchAd(); }} className="w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-black font-black text-lg py-4 rounded-2xl mb-3 shadow-[0_6px_0_#9a3412] active:translate-y-[6px] transition-all uppercase tracking-wider">Посмотреть видео</button>
+                <button onClick={() => { audioManager.play("ui"); setIsModalOpen(false); }} className="text-gray-400 hover:text-gray-200 text-xs font-semibold uppercase tracking-widest py-2">Отказаться от награды</button>
               </motion.div>
             </motion.div>
           )}
@@ -623,8 +651,8 @@ export default function Game() {
                 </motion.div>
                 <h2 className="text-2xl font-black text-cyan-300 mb-2 uppercase tracking-wide text-center drop-shadow-md">Удачный улов!</h2>
                 <p className="text-blue-100/90 text-center text-sm mb-6 leading-relaxed">Редкий пузырь! Посмотрите видео и заберите солидный бонус: <span className="text-yellow-300 font-black text-2xl block mt-2 drop-shadow-[0_0_10px_rgba(234,179,8,0.6)]">+{formatNumber(bubbleReward)} монет</span></p>
-                <button onClick={handleWatchBubbleAd} className="w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:to-indigo-500 text-white font-black text-lg py-4 rounded-2xl mb-3 shadow-[0_6px_0_#1e3a8a] active:translate-y-[6px] transition-all uppercase tracking-wider">Забрать куш</button>
-                <button onClick={() => setIsBubbleModalOpen(false)} className="text-gray-400 hover:text-gray-200 text-xs font-semibold uppercase tracking-widest py-2">Отказаться</button>
+                <button onClick={() => { audioManager.play("ui"); handleWatchBubbleAd(); }} className="w-full bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 hover:from-cyan-300 hover:to-indigo-500 text-white font-black text-lg py-4 rounded-2xl mb-3 shadow-[0_6px_0_#1e3a8a] active:translate-y-[6px] transition-all uppercase tracking-wider">Забрать куш</button>
+                <button onClick={() => { audioManager.play("ui"); setIsBubbleModalOpen(false); }} className="text-gray-400 hover:text-gray-200 text-xs font-semibold uppercase tracking-widest py-2">Отказаться</button>
               </motion.div>
             </motion.div>
           )}

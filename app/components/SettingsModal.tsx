@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { X, Edit2, Check, Volume2, VolumeX, Music, Smartphone } from "lucide-react";
+import { audioManager } from "../audio";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ export default function SettingsModal({
             animate={{ opacity: 1 }} 
             exit={{ opacity: 0 }}
             className="absolute inset-0 z-40 bg-black/70 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={() => { audioManager.play("ui"); onClose(); }}
           />
           
           <motion.div
@@ -57,7 +58,7 @@ export default function SettingsModal({
             
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-black text-white uppercase tracking-wide">Профиль</h2>
-              <button onClick={onClose} className="bg-white/10 p-2 rounded-full active:scale-90 transition-transform">
+              <button onClick={() => { audioManager.play("ui"); onClose(); }} className="bg-white/10 p-2 rounded-full active:scale-90 transition-transform">
                 <X className="text-white" size={24} />
               </button>
             </div>
@@ -82,7 +83,7 @@ export default function SettingsModal({
                       autoFocus
                     />
                     <button 
-                      onClick={handleSaveName}
+                      onClick={() => { audioManager.play("ui"); handleSaveName(); }}
                       className="bg-green-500 hover:bg-green-400 text-black p-1.5 rounded-lg active:scale-90 transition-all shrink-0"
                     >
                       <Check size={18} />
@@ -92,7 +93,7 @@ export default function SettingsModal({
                   <div className="flex items-center gap-2">
                     <h3 className="font-black text-xl text-yellow-300 truncate">{username}</h3>
                     <button 
-                      onClick={() => setIsEditing(true)}
+                      onClick={() => { audioManager.play("ui"); setIsEditing(true); }}
                       className="text-gray-400 hover:text-white p-1 active:scale-90 transition-all shrink-0"
                     >
                       <Edit2 size={16} />
@@ -114,7 +115,7 @@ export default function SettingsModal({
                   </div>
                   <span className="font-bold text-gray-200 text-sm">Музыка</span>
                 </div>
-                <Toggle isOn={musicEnabled} onToggle={() => setMusicEnabled(!musicEnabled)} />
+                <Toggle isOn={musicEnabled} onToggle={() => { audioManager.play("ui"); setMusicEnabled(!musicEnabled); }} />
               </div>
 
               {/* Звуки */}
@@ -125,7 +126,7 @@ export default function SettingsModal({
                   </div>
                   <span className="font-bold text-gray-200 text-sm">Звуки интерфейса</span>
                 </div>
-                <Toggle isOn={soundEnabled} onToggle={() => setSoundEnabled(!soundEnabled)} />
+                <Toggle isOn={soundEnabled} onToggle={() => { audioManager.play("ui"); setSoundEnabled(!soundEnabled); }} />
               </div>
 
               {/* Вибрация */}
@@ -136,7 +137,7 @@ export default function SettingsModal({
                   </div>
                   <span className="font-bold text-gray-200 text-sm">Вибрация</span>
                 </div>
-                <Toggle isOn={vibrationEnabled} onToggle={() => setVibrationEnabled(!vibrationEnabled)} />
+                <Toggle isOn={vibrationEnabled} onToggle={() => { audioManager.play("ui"); setVibrationEnabled(!vibrationEnabled); }} />
               </div>
 
             </div>
