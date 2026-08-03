@@ -1,3 +1,11 @@
+
+declare global {
+  interface Window {
+    YaGames: any;
+    ysdk: any;
+  }
+}
+
 export interface ClickParticle {
   id: number;
   x: number;

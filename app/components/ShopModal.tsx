@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Zap, TrendingUp, X, Pickaxe, HardHat, Video, Lock, Flame, Gem, Clock, Sparkles, Bot } from "lucide-react";
 import { formatNumber } from "../utils";
 import { audioManager } from "../audio";
+import { vibrationManager } from "../vibration";
 
 interface ShopModalProps {
   isShopOpen: boolean;
@@ -71,7 +72,7 @@ export default function ShopModal({
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="absolute inset-0 z-40 bg-black/60 backdrop-blur-sm"
-            onClick={() => { audioManager.play("ui"); setIsShopOpen(false); }}
+            onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); setIsShopOpen(false); }}
           />
           <motion.div
             initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
@@ -81,7 +82,7 @@ export default function ShopModal({
             <div className="w-12 h-1.5 bg-gray-600 rounded-full mx-auto mb-5" />
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-black text-white uppercase tracking-wide">Управление стройкой</h2>
-              <button onClick={() => { audioManager.play("ui"); setIsShopOpen(false); }} className="bg-white/10 p-2 rounded-full active:scale-90">
+              <button onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); setIsShopOpen(false); }} className="bg-white/10 p-2 rounded-full active:scale-90">
                 <X className="text-white" size={24} />
               </button>
             </div>
@@ -89,19 +90,19 @@ export default function ShopModal({
             {/* НАВИГАЦИЯ */}
             <div className="flex gap-2 mb-6 bg-black/50 p-1 rounded-xl shrink-0">
               <button
-                onClick={() => { audioManager.play("ui"); setShopTab("click"); }}
+                onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); setShopTab("click"); }}
                 className={`flex-1 py-3 font-bold text-xs sm:text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5 ${shopTab === "click" ? "bg-yellow-500 text-black shadow-md" : "text-gray-400"}`}
               >
                 <Zap size={16} /> Клик
               </button>
               <button
-                onClick={() => { audioManager.play("ui"); setShopTab("passive"); }}
+                onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); setShopTab("passive"); }}
                 className={`flex-1 py-3 font-bold text-xs sm:text-sm rounded-lg transition-colors flex items-center justify-center gap-1.5 ${shopTab === "passive" ? "bg-orange-500 text-black shadow-md" : "text-gray-400"}`}
               >
                 <TrendingUp size={16} /> Пассив
               </button>
               <button
-                onClick={() => { audioManager.play("ui"); setShopTab("premium"); }}
+                onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); setShopTab("premium"); }}
                 className={`flex-1 py-3 font-black text-xs sm:text-sm rounded-lg transition-all flex items-center justify-center gap-1.5 ${shopTab === "premium" ? "bg-gradient-to-r from-cyan-400 to-blue-500 text-black shadow-[0_0_15px_rgba(34,211,238,0.5)]" : "text-cyan-600/70"}`}
               >
                 <Gem size={16} /> Премиум
@@ -124,7 +125,7 @@ export default function ShopModal({
                   </div>
                   {coins >= clickUpgradeCost || isClickAdCooldown ? (
                     <button
-                      onClick={() => { audioManager.play("ui"); buyClickUpgrade(); }}
+                      onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); buyClickUpgrade(); }}
                       disabled={coins < clickUpgradeCost}
                       className="flex flex-col items-center justify-center bg-gradient-to-r from-blue-600 to-blue-500 disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 active:scale-95 transition-all px-4 py-3 rounded-xl min-w-[90px] shadow-lg shrink-0"
                     >
@@ -136,7 +137,7 @@ export default function ShopModal({
                     </button>
                   ) : (
                     <button
-                      onClick={() => { audioManager.play("ui"); handleUpgradeViaAd(); }}
+                      onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); handleUpgradeViaAd(); }}
                       className="flex flex-col items-center justify-center bg-gradient-to-r from-purple-600 to-pink-600 active:scale-95 transition-all px-3 py-3 rounded-xl min-w-[90px] shadow-[0_0_15px_rgba(219,39,119,0.4)] border border-pink-400/50 shrink-0"
                     >
                       <span className="text-[10px] font-bold uppercase mb-1 text-white flex items-center gap-1"><Video size={12} /> Реклама</span>
@@ -164,7 +165,7 @@ export default function ShopModal({
                     </div>
                   </div>
                   <button
-                    onClick={() => { audioManager.play("ui"); buyCritUpgrade(); }}
+                    onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); buyCritUpgrade(); }}
                     disabled={!isCritUnlocked || coins < critUpgradeCost || critChance >= 50}
                     className="flex flex-col items-center justify-center bg-gradient-to-r from-red-600 to-orange-600 disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 active:scale-95 transition-all px-4 py-3 rounded-xl min-w-[90px] shadow-lg shrink-0"
                   >
@@ -193,7 +194,7 @@ export default function ShopModal({
                 </div>
                 {coins >= passiveUpgradeCost || isPassiveAdCooldown ? (
                   <button
-                    onClick={() => { audioManager.play("ui"); buyPassiveUpgrade(); }}
+                    onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); buyPassiveUpgrade(); }}
                     disabled={coins < passiveUpgradeCost}
                     className="flex flex-col items-center justify-center bg-gradient-to-r from-blue-600 to-blue-500 disabled:from-gray-700 disabled:to-gray-800 disabled:text-gray-500 active:scale-95 transition-all px-4 py-3 rounded-xl min-w-[90px] shadow-lg shrink-0"
                   >
@@ -205,7 +206,7 @@ export default function ShopModal({
                   </button>
                 ) : (
                   <button
-                    onClick={() => { audioManager.play("ui"); handleUpgradeViaAd(); }}
+                    onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); handleUpgradeViaAd(); }}
                     className="flex flex-col items-center justify-center bg-gradient-to-r from-purple-600 to-pink-600 active:scale-95 transition-all px-3 py-3 rounded-xl min-w-[90px] shadow-[0_0_15px_rgba(219,39,119,0.4)] border border-pink-400/50 shrink-0"
                   >
                     <span className="text-[10px] font-bold uppercase mb-1 text-white flex items-center gap-1"><Video size={12} /> Реклама</span>
@@ -242,7 +243,7 @@ export default function ShopModal({
                     </div>
                   </div>
                   <button
-                    onClick={() => { audioManager.play("ui"); handleShopDiamondAd(); }}
+                    onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); handleShopDiamondAd(); }}
                     disabled={!isDiamondAdAvailable}
                     className="flex flex-col items-center justify-center bg-gradient-to-r from-cyan-500 to-blue-600 disabled:from-gray-800 disabled:to-gray-900 disabled:text-gray-600 active:scale-95 transition-all px-4 py-3 rounded-xl min-w-[90px] shadow-[0_4px_15px_rgba(34,211,238,0.4)] disabled:shadow-none border border-cyan-400/50 disabled:border-gray-700 shrink-0"
                   >
@@ -282,7 +283,7 @@ export default function ShopModal({
                     </div>
                   </div>
                   <button
-                    onClick={() => { audioManager.play("ui"); buyGoldRush(); }}
+                    onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); buyGoldRush(); }}
                     disabled={diamonds < 20 || isGoldRushActive}
                     className={`flex flex-col items-center justify-center active:scale-95 transition-all px-4 py-3 rounded-xl min-w-[90px] border shrink-0 ${isGoldRushActive ? "bg-gray-800 border-gray-700 text-gray-500" : "bg-gradient-to-r from-yellow-500 to-amber-600 disabled:from-gray-800 disabled:to-gray-900 disabled:text-gray-600 border-yellow-400/50 disabled:border-gray-700"}`}
                   >
@@ -317,7 +318,7 @@ export default function ShopModal({
                     </div>
                   </div>
                   <button
-                    onClick={() => { audioManager.play("ui"); buyAutoForeman(); }}
+                    onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); buyAutoForeman(); }}
                     disabled={diamonds < 15 || isAutoForemanActive}
                     className={`flex flex-col items-center justify-center active:scale-95 transition-all px-4 py-3 rounded-xl min-w-[90px] border shrink-0 ${isAutoForemanActive ? "bg-gray-800 border-gray-700 text-gray-500" : "bg-gradient-to-r from-emerald-500 to-green-600 disabled:from-gray-800 disabled:to-gray-900 disabled:text-gray-600 border-emerald-400/50 disabled:border-gray-700"}`}
                   >
@@ -346,7 +347,7 @@ export default function ShopModal({
                     </div>
                   </div>
                   <button
-                    onClick={() => { audioManager.play("ui"); buyDiamondUpgrade(); }}
+                    onClick={() => { audioManager.play("ui"); vibrationManager.play("ui"); buyDiamondUpgrade(); }}
                     disabled={diamonds < diamondUpgradeCost}
                     className="flex flex-col items-center justify-center bg-gradient-to-r from-fuchsia-600 to-purple-600 disabled:from-gray-800 disabled:to-gray-900 disabled:text-gray-600 active:scale-95 transition-all px-4 py-3 rounded-xl min-w-[90px] shadow-[0_4px_15px_rgba(192,38,211,0.4)] disabled:shadow-none border border-fuchsia-400/50 disabled:border-gray-700 shrink-0"
                   >

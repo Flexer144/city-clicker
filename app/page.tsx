@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatNumber } from "./utils";
 import { audioManager } from "./audio";
+import { vibrationManager } from "./vibration";
 
 // ИМПОРТЫ КОМПОНЕНТОВ
 import { ClickParticle, LeaderboardEntry, SaveData } from "./types";
@@ -18,12 +19,16 @@ import SettingsModal from "./components/SettingsModal";
 
 const SAVE_KEY = "construction_century_save_v2";
 
+type ObjectConfig = {
+  src: string;
+  scale: number; 
+};
 
 type EpochConfig = {
   name: string; 
   thresholds: number[];
   bg: string;
-  objects: string[];
+  objects: ObjectConfig[]; 
   mayor: string; 
 };
 
@@ -32,22 +37,36 @@ const EPOCHS: Record<number, EpochConfig> = {
     name: "Лесная поляна",
     thresholds: [1000, 15000, 100000],
     bg: "/lawn-1.PNG",
-    objects: ["/stump.PNG", "/hut12.PNG", "/tent1.PNG"],
+    objects: [
+      { src: "/stump.PNG", scale: 0.45 }, 
+      { src: "/hut12.PNG", scale: 0.7 }, 
+      { src: "/tent1.PNG", scale: 1.0 },  
+    ],
     mayor: "/mayor1.png",
   },
   2: {
     name: "Деревня",
     thresholds: [500000, 5000000, 20000000],
     bg: "/background.png",
-    objects: ["/reed-house1.png", "/stone-house.png", "/reed-house1.png"],
+    objects: [
+      { src: "/reed-house5.png", scale: 0.9 },
+      { src: "/wood-house1.png", scale: 1.0 },
+      { src: "/reed-house5.png", scale: 1.0 },
+    ],
     mayor: "/mayor2.png",
   },
 };
-
 export default function Game() {
+  // --- YANDEX SDK СТЕЙТЫ ---
+  const [ysdk, setYsdk] = useState<any>(null);
+  const [isAdPlaying, setIsAdPlaying] = useState(false);
+  const [player, setPlayer] = useState<any>(null); 
+
   // --- БАЗОВЫЕ СТЕЙТЫ ---
   const [isLoaded, setIsLoaded] = useState(false); 
-  const [isFirstLoad, setIsFirstLoad] = useState(true); 
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [isReadyToStart, setIsReadyToStart] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const [coins, setCoins] = useState(0);
   const [diamonds, setDiamonds] = useState(0);
   const [diamondUpgrades, setDiamondUpgrades] = useState(0);
@@ -81,7 +100,7 @@ export default function Game() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clickParticles, setClickParticles] = useState<ClickParticle[]>([]);
 
-  const [isFullCloudActive, setIsFullCloudActive] = useState(true);
+  const [isFullCloudActive, setIsFullCloudActive] = useState(false);
   const [isLocalCloudActive, setIsLocalCloudActive] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
   
@@ -112,40 +131,116 @@ export default function Game() {
   const passiveIncomeToAdd = Math.floor(2 + Math.pow(1.05, passiveLevel));
 
   // ==========================================
+  // YANDEX SDK ИНИЦИАЛИЗАЦИЯ
+  // ==========================================
+
+  // ИНИЦИАЛИЗАЦИЯ YANDEX SDK И ИГРОКА
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.YaGames) {
+      window.YaGames.init()
+        .then((ysdkInstance: any) => {
+          setYsdk(ysdkInstance);
+          window.ysdk = ysdkInstance;
+          
+          ysdkInstance.getPlayer({ scopes: false })
+            .then((_player: any) => {
+              setPlayer(_player);
+              console.log("Player API готов! Облачные сохранения подключены.");
+            })
+            .catch((err: any) => {
+              console.warn("Игрок не авторизован. Облако недоступно.");
+            });
+        })
+        .catch((err: any) => console.error("Ошибка SDK:", err));
+    }
+  }, []);
+
+
+  // ==========================================
   // СИСТЕМА СОХРАНЕНИЙ И ОФФЛАЙН ДОХОДА, ЗВУКИ
   // ==========================================
 
   // --- УПРАВЛЕНИЕ АУДИО ---
   useEffect(() => {
-    if (isLoaded) {
-      audioManager.init();
-      audioManager.updateSettings(musicEnabled, soundEnabled);
+    if (isLoaded && hasStarted) {
+      if (isAdPlaying) {
+        vibrationManager.updateSettings(vibrationEnabled);
+        audioManager.updateSettings(false, false);
+      } else {
+        audioManager.updateSettings(musicEnabled, soundEnabled);
+      }
     }
-  }, [isLoaded, musicEnabled, soundEnabled]);
+  }, [isLoaded, hasStarted, musicEnabled, soundEnabled, isAdPlaying]);
 
-  // 1. Загрузка данных при старте
+  // --- ЛОГИКА ЗАГРУЗОЧНОГО ЭКРАНА ---
   useEffect(() => {
-    const saved = localStorage.getItem(SAVE_KEY);
-    if (saved) {
-      try {
-        const data: SaveData = JSON.parse(saved);
+    if (!isLoaded) return;
+    
+    // Имитация загрузки ассетов (от 0 до 100)
+    const interval = setInterval(() => {
+      setLoadingProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsReadyToStart(true);
+          return 100;
+        }
+        return prev + Math.floor(Math.random() * 4) + 1;
+      });
+    }, 40);
+
+    return () => clearInterval(interval);
+  }, [isLoaded]);
+
+  // Срабатывает, когда игрок кликает "Начать"
+  const handleStartGame = () => {
+    if (!isReadyToStart) return;
+    
+    audioManager.init();
+    setHasStarted(true); 
+
+    if (ysdk && ysdk.features.LoadingAPI) {
+      ysdk.features.LoadingAPI.ready();
+    }
+  };
+
+  // 1. Загрузка данных при старте (Облако Яндекса + Локальный бэкап)
+  useEffect(() => {
+    const initLoad = async () => {
+      let data: SaveData | null = null;
+
+      if (player) {
+        try {
+          const cloudData = await player.getData();
+          if (cloudData && Object.keys(cloudData).length > 0) {
+            data = cloudData as SaveData;
+          }
+        } catch (e) { console.warn("Не удалось загрузить из облака", e); }
+      }
+
+      if (!data) {
+        const local = localStorage.getItem(SAVE_KEY);
+        if (local) data = JSON.parse(local) as SaveData;
+      }
+
+      if (data) {
         setCoins(data.coins ?? 0);
         setTotalEarned(data.totalEarned ?? 0);
         setStage(data.stage ?? 0);
         setCurrentEpoch(data.currentEpoch ?? 1);
         setClickPower(data.clickPower ?? 1);
         setPassiveIncome(data.passiveIncome ?? 0);
-        setClickLevel(data.clickLevel ?? data.clickPower ?? 1);
-        setPassiveLevel(data.passiveLevel ?? (data.passiveIncome ? data.passiveIncome / 2 : 0));
         setCritChance(data.critChance ?? 0);
         setDiamonds(data.diamonds ?? 0);
         setDiamondUpgrades(data.diamondUpgrades ?? 0);
         setGoldRushEndTime(data.goldRushEndTime ?? 0);
         setAutoForemanEndTime(data.autoForemanEndTime ?? 0);
+        
+        setClickLevel(data.clickLevel ?? data.clickPower ?? 1);
+        setPassiveLevel(data.passiveLevel ?? (data.passiveIncome ? data.passiveIncome / 2 : 0));
+
         const savedChestTime = data.lastDiamondChestTimestamp ?? 0;
         setLastDiamondChestTimestamp(savedChestTime);
         setLastShopAdTimestamp(data.lastShopAdTimestamp ?? 0);
-        // Проверяем: если прошло 24 часа (86 400 000 мс) с прошлого сундука - показываем новый!
         if (Date.now() - savedChestTime > 86400000) {
           setIsDiamondChestVisible(true);
         }
@@ -156,12 +251,10 @@ export default function Game() {
         setVibrationEnabled(data.vibrationEnabled ?? true);
 
         // Расчет оффлайн-дохода
-        if (data.lastOnlineTimestamp && data.passiveIncome > 0) {
+        if (data.lastOnlineTimestamp && data.passiveIncome && data.passiveIncome > 0) {
           const secondsOffline = Math.floor((Date.now() - data.lastOnlineTimestamp) / 1000);
-          // Ограничиваем оффлайн-доход 8 часами (28800 секунд)
           const offlineSecondsCapped = Math.min(secondsOffline, 28800); 
           const offlineReward = offlineSecondsCapped * data.passiveIncome;
-          
           if (offlineReward > 0) {
             setCoins((prev) => prev + offlineReward);
             setTotalEarned((prev) => prev + offlineReward);
@@ -170,45 +263,45 @@ export default function Game() {
             setIsOfflineModalOpen(true);
           }
         }
-      } catch (e) {
-        console.error("Ошибка загрузки сохранения:", e);
+      } else {
+        setUsername(`Игрок${Math.floor(Math.random() * 90000) + 10000}`);
       }
-    } else {
-      // Если сохранения вообще нет (первый вход) - генерируем ник сразу
-      setUsername(`Игрок${Math.floor(Math.random() * 90000) + 10000}`)
-    }
-    setIsLoaded(true); 
-  }, []);
+      
+      setIsLoaded(true);
+    };
+
+    const timer = setTimeout(initLoad, 500);
+    return () => clearTimeout(timer);
+  }, [player]);
 
   // 2. Автосохранение (каждые 5 сек + при закрытии вкладки)
   useEffect(() => {
-    if (!isLoaded) return; // Не сохраняем, пока не загрузили!
+    if (!isLoaded) return;
 
     const saveProgress = () => {
       const saveData: SaveData = {
-        coins,
-        totalEarned,
-        stage,
-        currentEpoch,
-        clickPower,
-        critChance,
-        passiveIncome,
-        username,
-        soundEnabled,
-        musicEnabled,
-        vibrationEnabled,
-        diamonds,
-        diamondUpgrades,
-        goldRushEndTime,
-        autoForemanEndTime,
-        lastDiamondChestTimestamp,
-        lastShopAdTimestamp, 
-        clickLevel,
-        passiveLevel,
-
+        coins, totalEarned, stage, currentEpoch, clickPower, critChance, passiveIncome,
+        username, soundEnabled, musicEnabled, vibrationEnabled, diamonds, diamondUpgrades,
+        goldRushEndTime, autoForemanEndTime, clickLevel, passiveLevel,
+        lastDiamondChestTimestamp, lastShopAdTimestamp,
         lastOnlineTimestamp: Date.now(),
       };
+      
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+
+      if (player) {
+        player.setData(saveData, true).catch(() => {});
+      }
+
+      if (ysdk && ysdk.getLeaderboards) {
+        ysdk.getLeaderboards()
+          .then((lb: any) => {
+            // 'top_builders' — это техническое имя лидерборда. 
+            // Тебе нужно будет точно так же назвать его в консоли разработчика Яндекс Игр!
+            lb.setLeaderboardScore('top_builders', totalEarned);
+          })
+          .catch(() => {});
+      }
     };
 
     const interval = setInterval(saveProgress, 5000);
@@ -222,7 +315,7 @@ export default function Game() {
       window.removeEventListener("beforeunload", saveProgress);
       window.removeEventListener("visibilitychange", saveProgress);
     };
-  }, [isLoaded, coins, totalEarned, stage, currentEpoch, clickPower, passiveIncome, critChance, username, soundEnabled, musicEnabled, vibrationEnabled, diamonds, lastDiamondChestTimestamp, lastShopAdTimestamp, diamondUpgrades, goldRushEndTime, autoForemanEndTime, clickLevel, passiveLevel]);
+  }, [isLoaded, coins, totalEarned, stage, currentEpoch, clickPower, passiveIncome, critChance, username, soundEnabled, musicEnabled, vibrationEnabled, diamonds, lastDiamondChestTimestamp, lastShopAdTimestamp, diamondUpgrades, goldRushEndTime, autoForemanEndTime, clickLevel, passiveLevel, player, ysdk]);
 
   // ==========================================
   // ОСТАЛЬНАЯ ЛОГИКА
@@ -265,25 +358,15 @@ export default function Game() {
   };
 
   const handleWatchDiamondChestAd = () => {
-    // В будущем здесь будет вызов рекламы: ysdk.adv.showRewardedVideo(...)
-    audioManager.play("reward");
-    setDiamonds((prev) => prev + 15); 
-    setLastDiamondChestTimestamp(Date.now()); 
-    setIsDiamondChestVisible(false); 
-    setIsDiamondChestModalOpen(false); 
+    showRewardedVideo(() => {
+      audioManager.play("reward");
+      vibrationManager.play("success");
+      setDiamonds((prev) => prev + 15);
+      setLastDiamondChestTimestamp(Date.now());
+      setIsDiamondChestVisible(false);
+      setIsDiamondChestModalOpen(false);
+    });
   };
-
-  // Убираем облака после загрузки
-  useEffect(() => {
-    if (isLoaded) {
-      const timer = setTimeout(() => {
-        setIsFullCloudActive(false);
-        // После того как облака исчезнут в первый раз, снимаем флаг первой загрузки
-        setTimeout(() => setIsFirstLoad(false), 1000);
-      }, 1500); // Даем игроку 1.5 секунды посмотреть на облака при старте
-      return () => clearTimeout(timer);
-    }
-  }, [isLoaded]);
 
   useEffect(() => {
     if (isTransitioning || !isLoaded) return;
@@ -353,6 +436,41 @@ export default function Game() {
     return () => clearInterval(interval);
   }, [passiveIncome, isLoaded, activeMultiplier]);
 
+  // --- ГЛОБАЛЬНАЯ ФУНКЦИЯ ПОКАЗА РЕКЛАМЫ ---
+  const showRewardedVideo = (onReward: () => void) => {
+    // Проверяем, запускаем ли мы игру на локальном компьютере
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+
+    if (ysdk && ysdk.adv && !isLocalhost) {
+      try {
+        ysdk.adv.showRewardedVideo({
+          callbacks: {
+            onOpen: () => {
+              setIsAdPlaying(true); // Глушим звуки
+            },
+            onRewarded: () => {
+              onReward(); // Выдаем награду
+            },
+            onClose: () => {
+              setIsAdPlaying(false); // Включаем звуки
+            },
+            onError: (e: any) => {
+              console.error("Ошибка показа рекламы от Яндекса:", e);
+              setIsAdPlaying(false);
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Критическая ошибка вызова SDK:", error);
+        setIsAdPlaying(false);
+      }
+    } else {
+      // Режим разработчика (localhost или если SDK не загрузился)
+      console.log("Режим локального теста: Реклама пропущена, награда выдана!");
+      onReward();
+    }
+  };
+
   const buyClickUpgrade = () => {
     if (coins >= clickUpgradeCost) {
       setCoins((prev) => prev - clickUpgradeCost);
@@ -383,9 +501,11 @@ export default function Game() {
   };
 
   const handleShopDiamondAd = () => {
-    // В будущем здесь будет ysdk.adv.showRewardedVideo(...)
-    setDiamonds((prev) => prev + 5);
-    setLastShopAdTimestamp(Date.now());
+    showRewardedVideo(() => {
+      audioManager.play("reward");
+      setDiamonds((prev) => prev + 5);
+      setLastShopAdTimestamp(Date.now());
+    });
   };
 
   const buyPassiveUpgrade = () => {
@@ -407,26 +527,34 @@ export default function Game() {
   const bubbleReward = Math.floor(adReward * 1.5);
 
   const handleUpgradeViaAd = () => {
-    if (shopTab === "click") {
-      setClickPower((prev) => prev + clickPowerToAdd);
-      setClickLevel((prev) => prev + 1);
-      setIsClickAdCooldown(true);
-      setTimeout(() => setIsClickAdCooldown(false), 60000);
-    } else {
-      setPassiveIncome((prev) => prev + passiveIncomeToAdd);
-      setPassiveLevel((prev) => prev + 1);
-      setIsPassiveAdCooldown(true);
-      setTimeout(() => setIsPassiveAdCooldown(false), 60000);
-    }
+    showRewardedVideo(() => {
+      audioManager.play("reward");
+      if (shopTab === "click") {
+        setClickPower((prev) => prev + clickPowerToAdd);
+        setClickLevel((prev) => prev + 1);
+        setIsClickAdCooldown(true);
+        setTimeout(() => setIsClickAdCooldown(false), 60000);
+      } else {
+        setPassiveIncome((prev) => prev + passiveIncomeToAdd);
+        setPassiveLevel((prev) => prev + 1);
+        setIsPassiveAdCooldown(true);
+        setTimeout(() => setIsPassiveAdCooldown(false), 60000);
+      }
+    });
   };
 
   const handleMainClick = (e: React.PointerEvent<HTMLDivElement>) => {
     if (isTransitioning) return;
 
     const isCrit = Math.random() * 100 < critChance;
+    if (isCrit) {
+      vibrationManager.play("crit");
+    } else {
+      vibrationManager.play("click");
+    }
     const baseEarned = isCrit ? clickPower * 5 : clickPower;
     const earned = baseEarned * activeMultiplier;
-    audioManager.play("click"); // <-- ЗВУК КЛИКА
+    audioManager.play("click");
 
     setCoins((prev) => prev + earned);
     setTotalEarned((prev) => prev + earned);
@@ -444,13 +572,16 @@ export default function Game() {
   };
 
   const handleWatchAd = () => {
-    const reward = calculateAdReward();
-    audioManager.play("reward"); // <-- ЗВУК ЗВОНА МОНЕТ
-    setCoins((prev) => prev + reward);
-    setTotalEarned((prev) => prev + reward);
-    setIsModalOpen(false);
-    setIsChestVisible(false);
-    setTimeout(() => setIsChestVisible(true), 45000);
+    showRewardedVideo(() => {
+      audioManager.play("reward");
+      vibrationManager.play("success");
+      const reward = calculateAdReward();
+      setCoins((prev) => prev + reward);
+      setTotalEarned((prev) => prev + reward);
+      setIsModalOpen(false);
+      setIsChestVisible(false);
+      setTimeout(() => setIsChestVisible(true), 45000);
+    });
   };
 
   useEffect(() => {
@@ -475,10 +606,13 @@ export default function Game() {
   };
 
   const handleWatchBubbleAd = () => {
-    setCoins((prev) => prev + bubbleReward);
-    audioManager.play("reward"); // <-- ЗВУК ЗВОНА МОНЕТ
-    setTotalEarned((prev) => prev + bubbleReward);
-    setIsBubbleModalOpen(false);
+    showRewardedVideo(() => {
+      audioManager.play("reward");
+      vibrationManager.play("success");
+      setCoins((prev) => prev + bubbleReward);
+      setTotalEarned((prev) => prev + bubbleReward);
+      setIsBubbleModalOpen(false);
+    });
   };
 
   // Забрать обычную награду (базовые монеты уже начислены при загрузке)
@@ -486,19 +620,21 @@ export default function Game() {
     setIsOfflineModalOpen(false);
   };
 
-  // Удвоить награду (добавляем еще 1х offlineEarned сверху)
+  // Удвоить награду (через рекламу)
   const handleDoubleOfflineReward = () => {
-    // Здесь в будущем будет вызов рекламы Yandex SDK:
-    // ysdk.adv.showRewardedVideo({ ... })
-    
-    setCoins((prev) => prev + offlineEarned);
-    setTotalEarned((prev) => prev + offlineEarned);
-    setIsOfflineModalOpen(false);
+    showRewardedVideo(() => {
+      audioManager.play("reward");
+      setCoins((prev) => prev + offlineEarned);
+      setTotalEarned((prev) => prev + offlineEarned);
+      setIsOfflineModalOpen(false);
+    });
   };
 
-  const getCenterObject = () => {
-    return EPOCHS[currentEpoch]?.objects[stage] || "/stump.PNG";
+  const getCurrentObject = () => {
+    return EPOCHS[currentEpoch]?.objects[stage] || { src: "/stump.PNG", scale: 0.5 };
   };
+  
+  const currentObj = getCurrentObject();
 
   const openShop = (tab: "click" | "passive") => {
     setShopTab(tab);
@@ -538,6 +674,54 @@ export default function Game() {
       </AnimatePresence>
 
       <div className="relative w-full max-w-md h-full shadow-2xl flex flex-col overflow-hidden">
+
+        { /* ЗАГРУЗОЧНЫЙ ЭКРАН (SPLASH SCREEN) */}
+      <AnimatePresence>
+        {!hasStarted && (
+          <motion.div
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="absolute inset-0 z-[200] flex flex-col items-center justify-center bg-black cursor-pointer"
+            onClick={handleStartGame}
+          >
+            {/* Фоновая картинка */}
+            <Image 
+              src="/start-screen1.PNG" 
+              alt="Загрузка..." 
+              fill 
+              className="object-cover" 
+              priority 
+            />
+            
+            {/* Контейнер ползунка */}
+            <div className="absolute bottom-[20%] w-3/4 max-w-sm flex flex-col items-center">
+              {/* Внешняя рамка бара */}
+              <div className="w-full h-12 bg-black/60 backdrop-blur-sm rounded-xl border-2 border-yellow-700/80 p-1 shadow-[0_0_20px_rgba(0,0,0,0.8)] overflow-hidden">
+                {/* Сам заполняющийся ползунок */}
+                <div 
+                  className="h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-200 rounded-xl transition-all duration-100 shadow-[0_0_10px_rgba(250,204,21,0.5)]"
+                  style={{ width: `${loadingProgress}%` }}
+                />
+              </div>
+              
+              {/* Текст под баром */}
+              <div className="mt-5 h-8 flex items-center justify-center">
+                {isReadyToStart ? (
+                  <span className="text-yellow-300 text-center font-black text-lg uppercase tracking-widest animate-pulse drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                    Нажмите, чтобы продолжить
+                  </span>
+                ) : (
+                  <span className="text-white/90 font-bold text-sm tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                    Загрузка... {loadingProgress}%
+                  </span>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
         
         {/* ФОН */}
         <div className="absolute inset-0 z-0">
@@ -561,7 +745,7 @@ export default function Game() {
         <GameField 
           isBubbleVisible={isBubbleVisible} setIsBubbleVisible={setIsBubbleVisible} 
           handleBubbleClick={handleBubbleClick} isLocalCloudActive={isLocalCloudActive}
-          centerObjectSrc={getCenterObject()} handleMainClick={handleMainClick} bubbleType={bubbleType}
+          centerObjectSrc={currentObj.src} objectScale={currentObj.scale} handleMainClick={handleMainClick} bubbleType={bubbleType}
         />
 
         <Footer 
@@ -709,8 +893,7 @@ export default function Game() {
         <AnimatePresence>
           {isFullCloudActive && (
             <motion.div 
-              // Если это первая загрузка - облака сразу 100% видимы. Иначе - плавно появляются из 0.
-              initial={{ opacity: isFirstLoad ? 1 : 0 }} 
+              initial={{ opacity: 0 }}
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }} 
               transition={{ duration: 1, ease: "easeInOut" }} 
