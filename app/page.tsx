@@ -16,7 +16,7 @@ import OfflineModal from "./components/OfflineModal";
 import RatingModal from "./components/RatingModal";
 import SettingsModal from "./components/SettingsModal";
 
-const SAVE_KEY = "construction_century_save_v3";
+const SAVE_KEY = "construction_century_save_v2";
 
 
 type EpochConfig = {
@@ -37,7 +37,7 @@ const EPOCHS: Record<number, EpochConfig> = {
   },
   2: {
     name: "Деревня",
-    thresholds: [500000, 3000000, 15000000],
+    thresholds: [500000, 5000000, 20000000],
     bg: "/background.png",
     objects: ["/reed-house1.png", "/stone-house.png", "/reed-house1.png"],
     mayor: "/mayor2.png",
@@ -371,14 +371,14 @@ export default function Game() {
   const buyGoldRush = () => {
     if (diamonds >= GOLD_RUSH_COST && !isGoldRushActive) {
       setDiamonds((prev) => prev - GOLD_RUSH_COST);
-      setGoldRushEndTime(Date.now() + 5 * 60 * 1000); // 5 минут
+      setGoldRushEndTime(Date.now() + 2 * 60 * 1000);
     }
   };
 
   const buyAutoForeman = () => {
     if (diamonds >= AUTO_FOREMAN_COST && !isAutoForemanActive) {
       setDiamonds((prev) => prev - AUTO_FOREMAN_COST);
-      setAutoForemanEndTime(Date.now() + 2 * 60 * 1000); // 2 минуты
+      setAutoForemanEndTime(Date.now() + 2 * 60 * 1000);
     }
   };
 

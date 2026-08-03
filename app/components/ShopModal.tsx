@@ -273,7 +273,7 @@ export default function ShopModal({
                       <h3 className={`font-black text-lg tracking-wide ${isGoldRushActive ? "text-yellow-400" : "text-yellow-500"}`}>
                         Золотая Лихорадка
                       </h3>
-                      <p className="text-yellow-100/70 text-xs mt-0.5">Доход х3 на 5 минут</p>
+                      <p className="text-yellow-100/70 text-xs mt-0.5">Доход х3 на 2 минуты</p>
                       {isGoldRushActive && (
                         <p className="text-yellow-300 text-xs font-bold mt-1 tracking-widest uppercase">
                           Активно: {formatTimeLeft(goldRushEndTime, currentTime)}
