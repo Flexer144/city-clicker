@@ -37,6 +37,7 @@ export interface SaveData {
   autoForemanEndTime?: number;
   clickLevel?: number;
   passiveLevel?: number;
+  hasSeenComingSoon?: boolean; 
 }
 
 export interface LeaderboardEntry {

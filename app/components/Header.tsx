@@ -15,6 +15,8 @@ interface HeaderProps {
   mayorImage: string;
   setIsModalOpen: (val: boolean) => void;
   openSettings: () => void;
+  handleEvolution: () => void;
+  isGameCompleted: boolean;
 }
 
 export default function Header({
@@ -28,19 +30,39 @@ export default function Header({
   isModalOpen,
   setIsModalOpen,
   mayorImage,
-  openSettings
+  openSettings,
+  handleEvolution,
+  isGameCompleted
 }: HeaderProps) {
   return (
     <header className="relative z-30 w-full p-5 flex flex-col gap-4">
-      <div className="w-full bg-black/70 rounded-full h-8 border-[3px] border-yellow-600/70 p-1 relative overflow-hidden backdrop-blur-md shadow-xl">
-        <div
-          className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-yellow-200 rounded-full transition-all duration-300 ease-out shadow-[0_0_12px_rgba(234,179,8,0.8)]"
-          style={{ width: `${progressPercent}%` }}
-        />
-        <span className="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-black text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.9)] tracking-wider">
-          {formatNumber(totalEarned)} / {formatNumber(nextThreshold)}
-        </span>
-      </div>
+       {/* ПРОГРЕСС БАР ИЛИ КНОПКА ЭВОЛЮЦИИ */}
+        <div className="mt-2 relative h-6 bg-black/60 rounded-full border-2 border-yellow-700/80 overflow-hidden shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
+          {progressPercent >= 100 ? (
+            <button 
+              onClick={handleEvolution}
+              className="absolute inset-0 w-full h-full bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-400 hover:to-emerald-300 flex items-center justify-center transition-all active:scale-95"
+            >
+              <span className="text-white font-black text-xs uppercase tracking-widest drop-shadow-md animate-pulse">
+                {isGameCompleted ? "Посмотреть тизер" : "Эволюция! (Нажми)"}
+              </span>
+            </button>
+          ) : (
+            <>
+              {/* Сам заполняющийся бар */}
+              <div 
+                className="h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-200 transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+              {/* Текст поверх бара */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[10px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] tracking-wider">
+                  {formatNumber(totalEarned)} / {formatNumber(nextThreshold)}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
 
       <div className="flex justify-between items-center relative z-10">
         <div className="flex gap-2 flex-wrap max-w-[90%]">

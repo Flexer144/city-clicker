@@ -17,7 +17,7 @@ import OfflineModal from "./components/OfflineModal";
 import RatingModal from "./components/RatingModal";
 import SettingsModal from "./components/SettingsModal";
 
-const SAVE_KEY = "construction_century_save_v2";
+const SAVE_KEY = "construction_century_save_v8";
 
 type ObjectConfig = {
   src: string;
@@ -38,8 +38,8 @@ const EPOCHS: Record<number, EpochConfig> = {
     thresholds: [1000, 15000, 100000],
     bg: "/lawn-1.PNG",
     objects: [
-      { src: "/stump.PNG", scale: 0.45 }, 
-      { src: "/hut12.PNG", scale: 0.7 }, 
+      { src: "/stump.PNG", scale: 0.7 }, 
+      { src: "/hut12.PNG", scale: 0.85 }, 
       { src: "/tent1.PNG", scale: 1.0 },  
     ],
     mayor: "/mayor1.png",
@@ -49,9 +49,9 @@ const EPOCHS: Record<number, EpochConfig> = {
     thresholds: [500000, 5000000, 20000000],
     bg: "/background.png",
     objects: [
-      { src: "/reed-house5.png", scale: 0.9 },
-      { src: "/wood-house1.png", scale: 1.0 },
-      { src: "/reed-house5.png", scale: 1.0 },
+      { src: "/reed-house5.png", scale: 0.8 },
+      { src: "/wood-house2.png", scale: 1.0 },
+      { src: "/break-house2.png", scale: 1.0 },
     ],
     mayor: "/mayor2.png",
   },
@@ -66,6 +66,8 @@ export default function Game() {
   const [isLoaded, setIsLoaded] = useState(false); 
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
+  const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
+  const [hasSeenComingSoon, setHasSeenComingSoon] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [coins, setCoins] = useState(0);
   const [diamonds, setDiamonds] = useState(0);
@@ -237,7 +239,8 @@ export default function Game() {
         
         setClickLevel(data.clickLevel ?? data.clickPower ?? 1);
         setPassiveLevel(data.passiveLevel ?? (data.passiveIncome ? data.passiveIncome / 2 : 0));
-
+        setHasSeenComingSoon(data.hasSeenComingSoon ?? false); 
+        
         const savedChestTime = data.lastDiamondChestTimestamp ?? 0;
         setLastDiamondChestTimestamp(savedChestTime);
         setLastShopAdTimestamp(data.lastShopAdTimestamp ?? 0);
@@ -283,7 +286,7 @@ export default function Game() {
         coins, totalEarned, stage, currentEpoch, clickPower, critChance, passiveIncome,
         username, soundEnabled, musicEnabled, vibrationEnabled, diamonds, diamondUpgrades,
         goldRushEndTime, autoForemanEndTime, clickLevel, passiveLevel,
-        lastDiamondChestTimestamp, lastShopAdTimestamp,
+        lastDiamondChestTimestamp, lastShopAdTimestamp, hasSeenComingSoon,
         lastOnlineTimestamp: Date.now(),
       };
       
@@ -315,7 +318,7 @@ export default function Game() {
       window.removeEventListener("beforeunload", saveProgress);
       window.removeEventListener("visibilitychange", saveProgress);
     };
-  }, [isLoaded, coins, totalEarned, stage, currentEpoch, clickPower, passiveIncome, critChance, username, soundEnabled, musicEnabled, vibrationEnabled, diamonds, lastDiamondChestTimestamp, lastShopAdTimestamp, diamondUpgrades, goldRushEndTime, autoForemanEndTime, clickLevel, passiveLevel, player, ysdk]);
+  }, [isLoaded, coins, totalEarned, stage, currentEpoch, clickPower, passiveIncome, critChance, username, soundEnabled, musicEnabled, vibrationEnabled, diamonds, lastDiamondChestTimestamp, lastShopAdTimestamp, diamondUpgrades, goldRushEndTime, autoForemanEndTime, clickLevel, passiveLevel, player, ysdk, hasSeenComingSoon]);
 
   // ==========================================
   // ОСТАЛЬНАЯ ЛОГИКА
@@ -368,21 +371,28 @@ export default function Game() {
     });
   };
 
-  useEffect(() => {
-    if (isTransitioning || !isLoaded) return;
+   // --- ЛОГИКА РУЧНОЙ ЭВОЛЮЦИИ ---
+  const isMaxEpoch = !EPOCHS[currentEpoch + 1];
+  const isMaxStage = stage === thresholds.length - 1;
+  const isGameCompleted = isMaxEpoch && isMaxStage && totalEarned >= nextThreshold;
 
-    // Проверяем достижение порогов для текущей эпохи
-    if (stage === 0 && totalEarned >= thresholds[0]) {
-      triggerObjectEvolution(1);
-    } else if (stage === 1 && totalEarned >= thresholds[1]) {
-      triggerObjectEvolution(2);
-    } else if (stage === 2 && totalEarned >= thresholds[2]) {
-      // Проверяем, есть ли следующая эпоха в нашем конфиге
-      if (EPOCHS[currentEpoch + 1]) {
-        triggerEpochTransition(currentEpoch + 1);
-      }
+  const handleEvolution = () => {
+    if (isTransitioning) return;
+
+    audioManager.play("ui"); // Звук нажатия
+
+    if (stage < thresholds.length - 1) {
+      // Эволюция объекта внутри эпохи
+      triggerObjectEvolution(stage + 1);
+    } else if (!isMaxEpoch) {
+      // Переход в новую эпоху
+      triggerEpochTransition(currentEpoch + 1);
+    } else {
+      // Контента больше нет - показываем тизер!
+      setIsComingSoonOpen(true);
+      setHasSeenComingSoon(true);
     }
-  }, [totalEarned, stage, currentEpoch, thresholds, isTransitioning, isLoaded]);
+  };
 
   const triggerObjectEvolution = (nextStage: number) => {
     setIsTransitioning(true);
@@ -739,6 +749,7 @@ export default function Game() {
           totalEarned={totalEarned} nextThreshold={nextThreshold} progressPercent={progressPercent}
           coins={coins} isChestVisible={isChestVisible} isModalOpen={isModalOpen} setIsModalOpen={setIsModalOpen}
           mayorImage={EPOCHS[currentEpoch]?.mayor || "/mayor1.png"} diamonds={diamonds} currentEpoch={currentEpoch}
+          handleEvolution={handleEvolution} isGameCompleted={isGameCompleted}
           openSettings={() => setIsSettingsOpen(true)}
         />
 
@@ -906,6 +917,45 @@ export default function Game() {
           )}
         </AnimatePresence>
         
+        {/* ЭКРАН "ПРОДОЛЖЕНИЕ СЛЕДУЕТ" */}
+        <AnimatePresence>
+          {isComingSoonOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.8 }}
+              className="absolute inset-0 z-[150] flex flex-col items-center justify-end pb-12 px-6 bg-black"
+            >
+              <Image 
+                src="/coming-soon.png"
+                alt="Coming Soon" 
+                fill 
+                className="object-cover" 
+                priority 
+              />
+              
+              <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/90 to-transparent pointer-events-none" />
+
+              <motion.div 
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+                className="relative z-10 w-full max-w-xs"
+              >
+                <button 
+                  onClick={() => {
+                    audioManager.play("ui");
+                    setIsComingSoonOpen(false);
+                  }}
+                  className="w-full bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 hover:from-yellow-300 hover:to-orange-400 text-black font-black text-lg py-4 rounded-2xl shadow-[0_6px_0_#9a3412] active:translate-y-[6px] transition-all uppercase tracking-wider"
+                >
+                  Вернуться к стройке
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </main>
   );
