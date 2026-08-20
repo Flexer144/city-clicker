@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,8 +25,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <head>
-        {/* ПОДКЛЮЧАЕМ SDK ЯНДЕКС ИГР */}
-        <Script src="https://yandex.ru/games/sdk/v2" strategy="beforeInteractive" />
+        <script src="/sdk.js"></script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
