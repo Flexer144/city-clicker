@@ -17,7 +17,7 @@ import OfflineModal from "./components/OfflineModal";
 import RatingModal from "./components/RatingModal";
 import SettingsModal from "./components/SettingsModal";
 
-const SAVE_KEY = "construction_century_save_v8";
+const SAVE_KEY = "construction_century_save_v10";
 
 type ObjectConfig = {
   src: string;
@@ -47,7 +47,7 @@ const EPOCHS: Record<number, EpochConfig> = {
   2: {
     name: "Деревня",
     thresholds: [500000, 5000000, 20000000],
-    bg: "/background.png",
+    bg: "/Background1.png",
     objects: [
       { src: "/reed-house5.png", scale: 0.8 },
       { src: "/wood-house2.png", scale: 1.0 },
@@ -344,7 +344,7 @@ export default function Game() {
   const baseDiamondMultiplier = 1 + (diamondUpgrades * 0.1); 
   const activeMultiplier = baseDiamondMultiplier * (isGoldRushActive ? 3 : 1);
 
-  const diamondUpgradeCost = Math.floor(50 * Math.pow(1.5, diamondUpgrades));
+  const diamondUpgradeCost = Math.floor(30 * Math.pow(1.5, diamondUpgrades));
   const GOLD_RUSH_COST = 20;
   const AUTO_FOREMAN_COST = 15;
 

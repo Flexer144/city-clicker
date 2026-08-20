@@ -66,17 +66,16 @@ export default function GameField({
               animate={{ opacity: 1, scale: 1.2 }}
               exit={{ opacity: 0, scale: 1.5 }}
               transition={{ duration: 0.5 }}
-              className="absolute z-20 w-64 h-64 sm:w-80 sm:h-80 pointer-events-none"
+              className="absolute z-20 w-84 h-84 sm:w-80 sm:h-80 pointer-events-none"
             >
-              {/* ВАЖНО: Если у тебя картинка облака называлась по-другому, поменяй src ниже! */}
-              <Image src="/local-clouds.png" alt="Облако" fill className="object-contain" priority />
+              <Image src="/build-cloud.png" alt="Облако" fill className="object-contain" priority />
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* 2. ГЛАВНЫЙ КЛИКАБЕЛЬНЫЙ ОБЪЕКТ С ДИНАМИЧЕСКИМ МАСШТАБОМ */}
         <motion.div
-          className="absolute z-10 w-90 h-90 sm:w-90 sm:h-90 cursor-pointer touch-none flex items-center justify-center drop-shadow-[0_25px_35px_rgba(0,0,0,0.5)]"
+          className="pt-10 absolute z-10 w-90 h-90 sm:w-100 sm:h-100 cursor-pointer touch-none flex items-center justify-center drop-shadow-[0_25px_35px_rgba(0,0,0,0.5)]"
           whileTap={{ scale: 0.95 }}
           onPointerDown={handleMainClick}
         >
@@ -89,7 +88,7 @@ export default function GameField({
               src={centerObjectSrc} 
               alt="Объект" 
               fill 
-              className="object-contain" 
+              className="object-contain"
               priority 
             />
           </div>

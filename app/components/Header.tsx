@@ -36,34 +36,36 @@ export default function Header({
 }: HeaderProps) {
   return (
     <header className="relative z-30 w-full p-5 flex flex-col gap-4">
-       {/* ПРОГРЕСС БАР ИЛИ КНОПКА ЭВОЛЮЦИИ */}
+      
+      {/* ПРОГРЕСС БАР ИЛИ ОГРОМНАЯ КНОПКА ЭВОЛЮЦИИ */}
+      {progressPercent >= 100 ? (
+        <button 
+          onClick={handleEvolution}
+          className="relative mt-2 w-full py-3 bg-gradient-to-b from-green-400 to-emerald-600 rounded-2xl border-2 border-green-300 shadow-[0_0_25px_rgba(16,185,129,0.8)] flex items-center justify-center animate-pulse active:scale-95 transition-transform cursor-pointer"
+        >
+          <span className="text-white font-black text-sm uppercase tracking-widest drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+            {isGameCompleted ? "Посмотреть тизер" : "Эволюция! (Нажми)"}
+          </span>
+          {/* Легкий эффект блика на кнопке */}
+          <div className="absolute inset-0 bg-gradient-to-t from-transparent via-white/20 to-transparent rounded-2xl pointer-events-none" />
+        </button>
+      ) : (
         <div className="mt-2 relative h-6 bg-black/60 rounded-full border-2 border-yellow-700/80 overflow-hidden shadow-[inset_0_0_10px_rgba(0,0,0,0.8)]">
-          {progressPercent >= 100 ? (
-            <button 
-              onClick={handleEvolution}
-              className="absolute inset-0 w-full h-full bg-gradient-to-r from-green-500 to-emerald-400 hover:from-green-400 hover:to-emerald-300 flex items-center justify-center transition-all active:scale-95"
-            >
-              <span className="text-white font-black text-xs uppercase tracking-widest drop-shadow-md animate-pulse">
-                {isGameCompleted ? "Посмотреть тизер" : "Эволюция! (Нажми)"}
-              </span>
-            </button>
-          ) : (
-            <>
-              {/* Сам заполняющийся бар */}
-              <div 
-                className="h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-200 transition-all duration-300"
-                style={{ width: `${progressPercent}%` }}
-              />
-              {/* Текст поверх бара */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[10px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] tracking-wider">
-                  {formatNumber(totalEarned)} / {formatNumber(nextThreshold)}
-                </span>
-              </div>
-            </>
-          )}
+          {/* Сам заполняющийся бар */}
+          <div 
+            className="h-full bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-200 transition-all duration-300"
+            style={{ width: `${progressPercent}%` }}
+          />
+          {/* Текст поверх бара */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="text-[12px] font-black text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] tracking-wider">
+              {formatNumber(totalEarned)} / {formatNumber(nextThreshold)}
+            </span>
+          </div>
         </div>
+      )}
 
+      {/* ТВОЙ ОРИГИНАЛЬНЫЙ БЛОК ИНТЕРФЕЙСА */}
       <div className="flex justify-between items-center relative z-10">
         <div className="flex gap-2 flex-wrap max-w-[90%]">
           {/* МОНЕТЫ */}
@@ -102,6 +104,7 @@ export default function Header({
           </div>
         </div>
 
+        {/* СУНДУК */}
         {isChestVisible && !isModalOpen && (
           <div
             className="absolute top-16 -left-4 w-34 h-34 sm:w-28 sm:h-28 animate-pulse cursor-pointer hover:scale-110 active:scale-95 transition-all drop-shadow-[0_12px_25px_rgba(234,179,8,0.8)] z-50"
