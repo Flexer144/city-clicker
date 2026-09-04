@@ -27,7 +27,7 @@ export default function RootLayout({
       <head>
         {/* Подключение Yandex Games SDK */}
         <script src="/sdk.js"></script>
-        {/* Моментальная инициализация до запуска React */}
+        {/* Инициализация SDK и детекция языка для п. 2.14 */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -36,6 +36,18 @@ export default function RootLayout({
                   if (typeof YaGames !== "undefined") {
                     YaGames.init().then(function(ysdk) {
                       window.ysdk = ysdk;
+
+                      // 1. Обязательный вызов для автоматической проверки п. 2.14
+                      try {
+                        var userLang = (ysdk.environment && ysdk.environment.i18n && ysdk.environment.i18n.lang) || 'ru';
+                        window.ysdkLang = userLang;
+                        document.documentElement.lang = userLang;
+                        console.log("SDK Language detected:", userLang);
+                      } catch (e) {
+                        console.warn("Language detect error:", e);
+                      }
+
+                      // 2. Сигнал о готовности отправляем строго после детекции языка
                       if (ysdk.features && ysdk.features.LoadingAPI) {
                         ysdk.features.LoadingAPI.ready();
                       }
