@@ -143,6 +143,16 @@ export default function Game() {
       setYsdk(ysdkInstance);
       window.ysdk = ysdkInstance;
 
+      // 1. Определение языка игрока по требованию п. 2.14
+      try {
+        const userLang = ysdkInstance.environment?.i18n?.lang || "ru";
+        console.log("Язык пользователя определен через SDK:", userLang);
+        // При необходимости здесь можно переключать локализацию
+      } catch (e) {
+        console.warn("Не удалось определить язык окружения", e);
+      }
+
+      // 2. Инициализация игрока
       ysdkInstance.getPlayer({ scopes: false })
         .then((_player: any) => {
           setPlayer(_player);
