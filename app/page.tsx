@@ -36,24 +36,24 @@ const EPOCHS: Record<number, EpochConfig> = {
   1: {
     name: "Лесная поляна",
     thresholds: [1000, 15000, 100000],
-    bg: "/lawn-1.PNG",
+    bg: "/lawn-1.jpg",
     objects: [
       { src: "/stump.PNG", scale: 0.7 }, 
       { src: "/hut12.PNG", scale: 0.85 }, 
       { src: "/tent1.PNG", scale: 1.0 },  
     ],
-    mayor: "/mayor1.png",
+    mayor: "/mayor1.jpg",
   },
   2: {
     name: "Деревня",
     thresholds: [500000, 5000000, 20000000],
-    bg: "/Background1.png",
+    bg: "/Background1.jpg",
     objects: [
       { src: "/reed-house5.png", scale: 0.8 },
       { src: "/wood-house2.png", scale: 1.0 },
       { src: "/break-house2.png", scale: 1.0 },
     ],
-    mayor: "/mayor2.png",
+    mayor: "/mayor2.jpg",
   },
 };
 export default function Game() {

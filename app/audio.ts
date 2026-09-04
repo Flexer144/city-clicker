@@ -14,19 +14,19 @@ class AudioSystem {
 
     // Фоновая музыка (зацикленная, тихая)
     this.bgm = new Howl({ 
-      src: ['/sounds/bgm.mp3'], 
+      src: ['./sounds/bgm.mp3'], // <-- ДОБАВЛЕНА ТОЧКА
       loop: true, 
       volume: 0.2 
     });
 
     // Звуковые эффекты
     this.sounds = {
-      click: new Howl({ src: ['/sounds/click.mp3'], volume: 0.4 }),
-      ui: new Howl({ src: ['/sounds/ui.mp3'], volume: 0.4 }),
-      build: new Howl({ src: ['/sounds/build.mp3'], volume: 0.7 }),
-      whoosh: new Howl({ src: ['/sounds/whoosh.mp3'], volume: 0.6 }),
-      pop: new Howl({ src: ['/sounds/pop.mp3'], volume: 0.6 }),
-      reward: new Howl({ src: ['/sounds/reward.mp3'], volume: 0.7 }),
+      click: new Howl({ src: ['./sounds/click.mp3'], volume: 0.4 }), // <-- ДОБАВЛЕНА ТОЧКА
+      ui: new Howl({ src: ['./sounds/ui.mp3'], volume: 0.4 }),
+      build: new Howl({ src: ['./sounds/build.mp3'], volume: 0.7 }),
+      whoosh: new Howl({ src: ['./sounds/whoosh.mp3'], volume: 0.6 }),
+      pop: new Howl({ src: ['./sounds/pop.mp3'], volume: 0.6 }),
+      reward: new Howl({ src: ['./sounds/reward.mp3'], volume: 0.7 }),
     };
   }
 
