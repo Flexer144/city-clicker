@@ -107,10 +107,10 @@ export default function Header({
         {/* СУНДУК */}
         {isChestVisible && !isModalOpen && (
           <div
-            className="absolute top-16 -left-4 w-34 h-34 sm:w-28 sm:h-28 animate-pulse cursor-pointer hover:scale-110 active:scale-95 transition-all drop-shadow-[0_12px_25px_rgba(234,179,8,0.8)] z-50"
+            className="absolute top-16 -left-1 w-18 h-18 sm:w-18 sm:h-18 animate-pulse cursor-pointer hover:scale-110 active:scale-95 transition-all drop-shadow-[0_12px_25px_rgba(234,179,8,0.8)] z-50"
             onClick={() => { audioManager.play("ui"); setIsModalOpen(true); }}
           >
-            <Image src="/chest.png" alt="Сундук" fill className="object-contain" sizes="112px" />
+            <Image src="/chest1.png" alt="Сундук" fill className="object-contain" sizes="112px" />
           </div>
         )}
       </div>

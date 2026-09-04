@@ -25,7 +25,34 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <head>
+        {/* Подключение Yandex Games SDK */}
         <script src="/sdk.js"></script>
+        {/* Моментальная инициализация до запуска React */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                function initSDK() {
+                  if (typeof YaGames !== "undefined") {
+                    YaGames.init().then(function(ysdk) {
+                      window.ysdk = ysdk;
+                      if (ysdk.features && ysdk.features.LoadingAPI) {
+                        ysdk.features.LoadingAPI.ready();
+                      }
+                    }).catch(console.error);
+                  }
+                }
+                if (typeof YaGames !== "undefined") {
+                  initSDK();
+                } else {
+                  var s = document.querySelector('script[src="/sdk.js"]');
+                  if (s) s.addEventListener("load", initSDK);
+                  window.addEventListener("load", initSDK);
+                }
+              })();
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}

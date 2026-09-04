@@ -17,7 +17,7 @@ import OfflineModal from "./components/OfflineModal";
 import RatingModal from "./components/RatingModal";
 import SettingsModal from "./components/SettingsModal";
 
-const SAVE_KEY = "construction_century_save_v10";
+const SAVE_KEY = "construction_century_save_v2";
 
 type ObjectConfig = {
   src: string;
@@ -80,6 +80,7 @@ export default function Game() {
   const [stage, setStage] = useState(0);
   const [currentEpoch, setCurrentEpoch] = useState(1); 
   const [isRatingOpen, setIsRatingOpen] = useState(false);
+    const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([]);
 
   const [clickPower, setClickPower] = useState(1);
   const [passiveIncome, setPassiveIncome] = useState(0);
@@ -138,23 +139,37 @@ export default function Game() {
 
   // ИНИЦИАЛИЗАЦИЯ YANDEX SDK И ИГРОКА
   useEffect(() => {
-    if (typeof window !== "undefined" && window.YaGames) {
-      window.YaGames.init()
-        .then((ysdkInstance: any) => {
-          setYsdk(ysdkInstance);
-          window.ysdk = ysdkInstance;
-          
-          ysdkInstance.getPlayer({ scopes: false })
-            .then((_player: any) => {
-              setPlayer(_player);
-              console.log("Player API готов! Облачные сохранения подключены.");
-            })
-            .catch((err: any) => {
-              console.warn("Игрок не авторизован. Облако недоступно.");
-            });
+    const setupYsdk = (ysdkInstance: any) => {
+      setYsdk(ysdkInstance);
+      window.ysdk = ysdkInstance;
+
+      ysdkInstance.getPlayer({ scopes: false })
+        .then((_player: any) => {
+          setPlayer(_player);
         })
-        .catch((err: any) => console.error("Ошибка SDK:", err));
+        .catch(() => {
+          console.warn("Игрок не авторизован в Яндекс.");
+        });
+    };
+
+    if (window.ysdk) {
+      setupYsdk(window.ysdk);
+      return;
     }
+
+    const interval = setInterval(() => {
+      if (window.ysdk) {
+        setupYsdk(window.ysdk);
+        clearInterval(interval);
+      } else if (typeof window !== "undefined" && window.YaGames) {
+        window.YaGames.init()
+          .then((instance: any) => setupYsdk(instance))
+          .catch(console.error);
+        clearInterval(interval);
+      }
+    }, 150);
+
+    return () => clearInterval(interval);
   }, []);
 
 
@@ -299,9 +314,8 @@ export default function Game() {
       if (ysdk && ysdk.getLeaderboards) {
         ysdk.getLeaderboards()
           .then((lb: any) => {
-            // 'top_builders' — это техническое имя лидерборда. 
-            // Тебе нужно будет точно так же назвать его в консоли разработчика Яндекс Игр!
-            lb.setLeaderboardScore('top_builders', totalEarned);
+            const extraData = JSON.stringify({ epoch: currentEpoch, diamonds: diamonds });
+            lb.setLeaderboardScore('topBuilders', totalEarned, extraData);
           })
           .catch(() => {});
       }
@@ -331,6 +345,44 @@ export default function Game() {
     { id: "4", rank: 4, name: username, epoch: currentEpoch, coins: coins, totalEarned: totalEarned, diamonds: diamonds, isCurrentPlayer: true },
     { id: "5", rank: 5, name: "Новичок2026", epoch: 1, coins: 1500, totalEarned: 2000, diamonds: 0 },
   ].sort((a, b) => b.totalEarned - a.totalEarned).map((player, index) => ({...player, rank: index + 1}));
+
+  // --- ЗАГРУЗКА РЕАЛЬНОГО РЕЙТИНГА ---
+  useEffect(() => {
+    // Скачиваем данные только если игрок открыл таблицу и мы в Яндексе
+    if (isRatingOpen && ysdk && ysdk.getLeaderboards) {
+      ysdk.getLeaderboards()
+        .then((lb: any) => {
+          // Просим топ-10 игроков и 3 игроков вокруг нас
+          lb.getLeaderboardEntries('topBuilders', { quantityTop: 10, includeUser: true, quantityAround: 3 })
+            .then((res: any) => {
+              const realPlayers = res.entries.map((entry: any) => {
+                // Распаковываем наши дополнительные данные (эпоху и алмазы)
+                let extra = { epoch: 1, diamonds: 0 };
+                try {
+                  if (entry.extraData) extra = JSON.parse(entry.extraData);
+                } catch(e) {}
+
+                return {
+                  id: String(entry.rank), 
+                  rank: entry.rank,
+                  name: entry.player.publicName || "Анонимный строитель", // Если игрок скрыл имя в Яндексе
+                  epoch: extra.epoch,
+                  coins: entry.score, // Показываем общий заработок
+                  totalEarned: entry.score,
+                  diamonds: extra.diamonds,
+                  isCurrentPlayer: entry.player.publicName === username // Подсвечиваем себя
+                };
+              });
+              setLeaderboardData(realPlayers);
+            })
+            .catch(() => setLeaderboardData(mockLeaderboard)); // Если ошибка - показываем ботов
+        })
+        .catch(() => setLeaderboardData(mockLeaderboard));
+    } else if (isRatingOpen) {
+      // Если мы запускаем на localhost - показываем ботов
+      setLeaderboardData(mockLeaderboard);
+    }
+  }, [isRatingOpen, ysdk, username]);
 
   // Обновляем часы каждую секунду, чтобы интерфейс понимал, когда буст закончился
   useEffect(() => {
@@ -793,7 +845,7 @@ export default function Game() {
         <RatingModal 
           isOpen={isRatingOpen}
           onClose={() => setIsRatingOpen(false)}
-          leaderboard={mockLeaderboard}
+          leaderboard={leaderboardData}
           epochsConfig={EPOCHS}
         />
 
@@ -860,10 +912,10 @@ export default function Game() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0 }}
-              className="absolute bottom-29 -right-3 w-28 h-28 sm:w-32 sm:h-32 animate-pulse cursor-pointer hover:scale-110 active:scale-95 transition-all drop-shadow-[0_0_30px_rgba(34,211,238,0.9)] z-40"
+              className="absolute bottom-38 right-2 w-18 h-18 sm:w-18 sm:h-18 animate-pulse cursor-pointer hover:scale-110 active:scale-95 transition-all drop-shadow-[0_0_30px_rgba(34,211,238,0.9)] z-40"
               onClick={() => setIsDiamondChestModalOpen(true)}
             >
-              <Image src="/chest.png" alt="Алмазный Сундук" fill className="object-contain drop-shadow-2xl hue-rotate-180 brightness-125" />
+              <Image src="/chest1.png" alt="Алмазный Сундук" fill className="object-contain drop-shadow-2xl hue-rotate-180 brightness-125" />
             </motion.div>
           )}
         </AnimatePresence>
